@@ -1,9 +1,9 @@
-#include<windows.h>
 #include<stdio.h>
-#include<conio.h>
 #include<string.h>
 #include<stdlib.h>
+#include<unistd.h>
 
+#include"ds.h"
 #include"partition.h"
 #include"fstest1.h"
 int main()
@@ -12,7 +12,6 @@ int main()
     ffile fp,temp;
     int i;
     char name[32],command[100],p[10]="test1",path[10],path2[10],path3[10],path4[10],*contents;
-    system("color f0");
     strcpy(path,p);
     strcat(path,".psl");
     
@@ -27,14 +26,19 @@ int main()
         printf("wrong password ... try again\n");
     
     psllogo();
-    sleep(4);
+    sleep(2);
     current=readFolder(path,1,current);
     invokeFreeSectors("test1.fol","test1.fil","test1.fs");
     while(1)
     {
         showFolder(path,current);
         //command=getCommand();
-        gets(command);
+        if(fgets(command, sizeof(command), stdin) != NULL) {
+            // Remove trailing newline
+            command[strcspn(command, "\n")] = 0;
+        } else {
+            continue;
+        }
         if(strncmp(command,"md ",3)==0)
         {
             //puts("in md");
@@ -149,7 +153,14 @@ int main()
                 strcpy(temp.name,name);
                 p=writeFile(path,current,temp);
                 current=foldTravel(path,current.sector);
-                system("edit alpha");
+                // Open default editor
+                if(getenv("EDITOR")) {
+                    char cmd[256];
+                    snprintf(cmd, sizeof(cmd), "%s alpha", getenv("EDITOR"));
+                    system(cmd);
+                } else {
+                    system("nano alpha 2>/dev/null || vi alpha 2>/dev/null || vim alpha");
+                }
                 
                 if(p!=0)
                 {
@@ -159,7 +170,6 @@ int main()
                 }
             }
             else printf("File not writable!!\n");
-            system("color f0");
             
         }
         if(strncmp(command,"del ",4)==0)
@@ -176,16 +186,28 @@ int main()
             ffile *p;
             char g;
             printf("choose editor\n");
-            printf("1.psleditor\n");
-            printf("2.notepad\n");
-            printf("3.cmd editor\n");
+            printf("1.nano\n");
+            printf("2.vi\n");
+            printf("3.vim\n");
+            printf("4.$EDITOR (environment variable)\n");
             g=getch();
             if(g=='1')
-                system("editor alpha.txt");
+                system("nano alpha.txt");
             else if(g=='2')
-                system("notepad alpha.txt");
-            else
-                system("edit alpha.txt");
+                system("vi alpha.txt");
+            else if(g=='3')
+                system("vim alpha.txt");
+            else if(g=='4') {
+                if(getenv("EDITOR")) {
+                    char cmd[256];
+                    snprintf(cmd, sizeof(cmd), "%s alpha.txt", getenv("EDITOR"));
+                    system(cmd);
+                } else {
+                    printf("EDITOR environment variable not set, using nano\n");
+                    system("nano alpha.txt");
+                }
+            } else
+                system("nano alpha.txt");
             
             for(i=5;i<strlen(command);i++)
                 name[i-5]=command[i];
@@ -203,7 +225,6 @@ int main()
                 writeFileContents(path,contents,p);
                 unlink("alpha.txt");
             }
-            system("color f0");
         }
         if(strncmp(command,"df ",3)==0)
         {
@@ -233,41 +254,39 @@ int main()
         if(strcmp(command,"quit")==0)
         {
             puts("bye bye !! see you next time");
-            getch();
-            exit(1);
-        }
-        if(strcmp(command,"sudoku")==0)
-        {
-            system("color 0f");
-            system("sudoku");
-            system("color f0");
-        }
-        if(strcmp(command,"quark")==0)
-        {
-            system("quark");
-            system("color f0");
+            sleep(1);
+            exit(0);
         }
         if(strcmp(command,"clear")==0)
         {
             clrscr();
-            system("color f0");
-        }
-        if(strcmp(command,"chat")==0)
-        {
-            system("chatpsl");
         }
         if(strncmp(command,"web ",4)==0)
         {
-            
             for(i=4;i<strlen(command);i++)
                 name[i-4]=command[i];
             name[i-4]=0;
-            ShellExecute(0,"open",name, NULL, NULL, 0);
+            // Use xdg-open on Linux to open URLs
+            char cmd[256];
+            snprintf(cmd, sizeof(cmd), "xdg-open '%s' 2>/dev/null || open '%s' 2>/dev/null &", name, name);
+            system(cmd);
         }
-        if(strcmp(command,"search")==0)
+        if(strcmp(command,"help")==0)
         {
-            system("google");
-            system("color f0");
+            printf("\nAvailable commands:\n");
+            printf("  ls, showdir      - List directory contents\n");
+            printf("  cd <dir>         - Change directory (.. for parent, / for root)\n");
+            printf("  md <name>        - Create directory\n");
+            printf("  mf <name>        - Create file\n");
+            printf("  show <file>      - Display file contents\n");
+            printf("  edit <file>      - Edit file\n");
+            printf("  del <name>       - Delete file or folder\n");
+            printf("  df <file>        - Delete file\n");
+            printf("  cfmode <file>    - Change file permissions\n");
+            printf("  cdmode <dir>     - Change directory permissions\n");
+            printf("  web <url>        - Open URL in browser\n");
+            printf("  clear            - Clear screen\n");
+            printf("  quit             - Exit filesystem\n\n");
         }
         
     }

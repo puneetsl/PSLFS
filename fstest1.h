@@ -51,20 +51,29 @@ ffolder readFolder(char *path,long sector,ffolder cur){
     FILE *f;
     ffolder tem;
     f=fopen(path,"r+");
+    if(f == NULL) {
+        printf("Error: Cannot open filesystem file %s\n", path);
+        printf("Make sure you run './base' first to initialize the filesystem.\n");
+        exit(1);
+    }
     if(sector!=0)
     {
-        if(fseek(f,sector,0)!=0)
+        if(fseek(f,sector,0)!=0) {
             printf("sector error .. this sector does not exists");
-        else
+            fclose(f);
+            return cur;
+        } else {
             fread(&tem,sizeof(tem),1,f);
+        }
     }
     else
     {
         puts("No such folder exists .... system restoring.. ");
+        fclose(f);
         return cur;
     }
     fclose(f);
-    
+
     return tem;
 }
 int writeFolder(char *path,ffolder cur,ffolder fold){
@@ -127,10 +136,8 @@ int writeFolder(char *path,ffolder cur,ffolder fold){
         }
         fseek(f,sector,0);
         fwrite(&fold,sizeof(fold),1,f);
-        
-        
-        fclose(f);
-        
+
+
         getLastSector(path,fsec);
         getLastSector(path,foldsec);
         getLastSector(path,filesec);
@@ -204,8 +211,7 @@ ffile *writeFile(char *path,ffolder cur,ffile fold){
         
         fseek(f,sector,0);
         fwrite(&fold,sizeof(fold),1,f);
-        
-        fclose(f);
+
         if(foldsec!=0)
             getLastSector(path,foldsec);
         else printf("foldsec =0");
@@ -213,17 +219,27 @@ ffile *writeFile(char *path,ffolder cur,ffile fold){
         getLastSector(path,fsec);
     }
     fclose(f);
-    
+
     return &fold;
 }
 ffolder foldTravel(char *path,long sector){
-    
+
     FILE *f;
     ffolder tem;
     f=fopen(path,"r+");
-    fseek(f,sector,0);
+    if(f == NULL) {
+        printf("Error: Cannot open filesystem file %s\n", path);
+        memset(&tem, 0, sizeof(tem));
+        return tem;
+    }
+    if(fseek(f,sector,0) != 0) {
+        printf("Error: Invalid sector %ld\n", sector);
+        fclose(f);
+        memset(&tem, 0, sizeof(tem));
+        return tem;
+    }
     fread(&tem,sizeof(tem),1,f);
-    
+
     fclose(f);
     return tem;
 }
@@ -232,9 +248,19 @@ ffile fileTravel(char *path,long sector){
     FILE *f;
     ffile tem;
     f=fopen(path,"r+");
-    fseek(f,sector,0);
+    if(f == NULL) {
+        printf("Error: Cannot open filesystem file %s\n", path);
+        memset(&tem, 0, sizeof(tem));
+        return tem;
+    }
+    if(fseek(f,sector,0) != 0) {
+        printf("Error: Invalid sector %ld\n", sector);
+        fclose(f);
+        memset(&tem, 0, sizeof(tem));
+        return tem;
+    }
     fread(&tem,sizeof(tem),1,f);
-    
+
     fclose(f);
     return tem;
 }
@@ -964,20 +990,21 @@ void showfile(char *path,ffolder cur,char *name)
     wfile cont;
     ffile tem;
     f=fopen(path,"r+");
-    
-    
-    
-    
+
+
+
+
     tem=fileTravel(path,cur.filesector);
     while(tem.next!=0)
     {
-        
+
         if(strcmp(tem.name,name)==0)
         {
             k=1;
             if(tem.properties[0]!='r')
             {
                 printf("this file is not readable\n");
+                fclose(f);
                 return;
             }
             fseek(f,tem.fsector,0);
@@ -1272,7 +1299,9 @@ int extract(char *path,ffolder cur,char *name)
             if(tem.properties[0]!='r')
             {
                 printf("this file is not readable\n");
-                return;
+                fclose(f);
+                fclose(fp);
+                return 0;
             }
             fseek(f,tem.fsector,0);
             fread(&cont,sizeof(cont),1,f);
@@ -1297,13 +1326,15 @@ int extract(char *path,ffolder cur,char *name)
         if(tem.properties[0]!='r')
         {
             printf("this file is not readable\n");
-            return;
+            fclose(f);
+            fclose(fp);
+            return 0;
         }
         fseek(f,tem.fsector,0);
         fread(&cont,sizeof(cont),1,f);
         while(cont.next!=0)
         {
-            
+
             fprintf(fp,"%s",cont.buff);
             fseek(f,cont.next,0);
             fread(&cont,sizeof(cont),1,f);
@@ -1318,6 +1349,7 @@ int extract(char *path,ffolder cur,char *name)
     printf("\n");
     if(k!=1)
         printf("file not found\n");
+    return 0;
 }
 char *intract(char *path)
 {
@@ -1325,18 +1357,27 @@ char *intract(char *path)
     FILE *f;
     long h=0;
     f=fopen(path,"r+");
-    fseek(f,0,2);
-    p=(char*)malloc(ftell(f));
-    h=ftell(f);
-    
-    fseek(f,0,0);
-    fread(p,h,1,f);
-    fclose(f);
-    if(h==0)
-    {
+    if(f == NULL) {
         p=(char*)malloc(1);
         p[0]=0;
+        return p;
     }
+    fseek(f,0,2);
+    h=ftell(f);
+
+    if(h==0)
+    {
+        fclose(f);
+        p=(char*)malloc(1);
+        p[0]=0;
+        return p;
+    }
+
+    p=(char*)malloc(h+1);
+    fseek(f,0,0);
+    fread(p,h,1,f);
+    p[h]=0;  // Null terminate
+    fclose(f);
     return p;
 }
 
@@ -1384,25 +1425,36 @@ int makeUser()
     int i;
     f=fopen("authent","wb");
     printf("Enter user name: ");
-    gets(user.username);
+    if(fgets(user.username, sizeof(user.username), stdin) != NULL) {
+        user.username[strcspn(user.username, "\n")] = 0;
+    }
     printf("Enter password : ");
-    gets(user.password);
+    if(fgets(user.password, sizeof(user.password), stdin) != NULL) {
+        user.password[strcspn(user.password, "\n")] = 0;
+    }
     for(i=0;i<strlen(user.password);i++)
     {user.password[i]=user.password[i]-3;}
     fwrite(&user,sizeof(user),1,f);
-    puts(user.password);
-    getch();
-    
+    fclose(f);
+    printf("User created successfully!\n");
+    return 0;
 }
 int Authenticate(){
-    
+
     Acc user,user1;
     FILE *f;
     int i;
     f=fopen("authent","r");
+    if(f == NULL) {
+        printf("Authentication file not found. Please run base.exe first.\n");
+        return 1;
+    }
     fread(&user1,sizeof(user1),1,f);
+    fclose(f);
     printf("Enter user name: ");
-    gets(user.username);
+    if(fgets(user.username, sizeof(user.username), stdin) != NULL) {
+        user.username[strcspn(user.username, "\n")] = 0;
+    }
     printf("Enter password : ");
     pass(user.password);
     for(i=0;i<strlen(user1.password);i++)

@@ -111,7 +111,9 @@ void userdata()
         if(in.date[i]==10)
             in.date[i]=0;
     printf("enter user name for the root user(max 32 charachters)::> ");
-    gets(user);
+    if(fgets(user, sizeof(user), stdin) != NULL) {
+        user[strcspn(user, "\n")] = 0;
+    }
     printf("set system password (max 32 charachters)::> ");
     password(temppass1);
     printf("confirm the password ::> ");
@@ -133,15 +135,24 @@ void userdata()
 void install(char *path)
 {
     FILE *fp;
-    
-    
+
+
     printf("\n\ninstalling.......\n\n");
     fp=fopen(path,"r+");
+    if(fp == NULL) {
+        printf("Error: Cannot open partition file\n");
+        return;
+    }
     fwrite(&in,sizeof(in),1,fp);
     fclose(fp);
-    printf("%d \n %d \n %s \n %s \n %s \n %s \n %s ",in.part_size,in.free_space,in.operatingsystem,in.version,in.date,in.userName,in.password);
-    printf("created a new partition");
-    getch();
+    printf("Partition created successfully!\n");
+    printf("Size: %d bytes\n", in.part_size);
+    printf("Free space: %d bytes\n", in.free_space);
+    printf("OS: %s\n", in.operatingsystem);
+    printf("Version: %s\n", in.version);
+    printf("Date: %s\n", in.date);
+    printf("Username: %s\n", in.userName);
+    sleep(2);
 }
 
 void install_pslos(char *path)
