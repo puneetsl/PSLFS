@@ -70,6 +70,14 @@ This repository contains comprehensive design documentation for PSLFS V2:
    - Usage examples (format pendrives, SD cards, etc.)
    - Performance characteristics
 
+### 8. **[K_ARY_TREES_ANALYSIS.md](K_ARY_TREES_ANALYSIS.md)** - K-ary Trees Deep Dive
+   - **Should filesystems use K-ary trees? (Spoiler: V2 already does!)**
+   - BTreeMap vs on-disk B-trees vs hash trees
+   - Directory structures comparison
+   - File block mapping strategies
+   - Real-world examples (ext4, XFS, btrfs)
+   - Advanced features as learning modules
+
 ---
 
 ## 🚀 Quick Start
