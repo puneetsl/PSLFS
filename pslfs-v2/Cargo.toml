@@ -3,4 +3,12 @@ name = "pslfs-v2"
 version = "0.1.0"
 edition = "2024"
 
+[lib]
+name = "pslfs"
+path = "src/lib.rs"
+
+[[bin]]
+name = "pslfs"
+path = "src/main.rs"
+
 [dependencies]
