@@ -1,7 +1,108 @@
-//! Bitmap-based block allocator for PSLFS V2
+//! # Bitmap-Based Block Allocator for PSLFS V2
 //!
 //! This module provides efficient O(1) block allocation using a bitmap,
 //! replacing the O(n) linked list approach from V0.1.
+//!
+//! ## Why Bitmap Allocation?
+//!
+//! V0.1 used linked lists for free block management, which required O(n) traversal
+//! to find free blocks. This module implements a bitmap-based allocator that provides:
+//!
+//! - **O(1) Allocation**: Find first free block in constant time using bit scanning
+//! - **Compact Representation**: 1 bit per block (vs 64+ bytes per block in linked lists)
+//! - **Easy Persistence**: Simple to save/restore bitmap state
+//! - **Standard Technique**: Used in real filesystems like ext2/ext4
+//!
+//! ## How It Works
+//!
+//! The allocator uses a `Vec<u64>` where each bit represents a block:
+//!
+//! - **1 = Free**: Block is available for allocation
+//! - **0 = Allocated**: Block is in use
+//!
+//! ### Allocation Process
+//! 1. Scan bitmap for first 1-bit (free block)
+//! 2. Clear the bit (mark as allocated)
+//! 3. Update statistics and caches
+//! 4. Return BlockId
+//!
+//! ### Free Process
+//! 1. Validate block is allocated
+//! 2. Set the bit (mark as free)
+//! 3. Update statistics and caches
+//!
+//! ## Performance Characteristics
+//!
+//! | Operation | Time Complexity | Space Overhead |
+//! |-----------|-----------------|----------------|
+//! | Allocate | O(1) | 1 bit per block |
+//! | Free | O(1) | 1 bit per block |
+//! | Check Status | O(1) | 1 bit per block |
+//! | Contiguous Alloc | O(n) | 1 bit per block |
+//!
+//! ## Memory Usage
+//!
+//! For a 1GB filesystem with 4KB blocks:
+//! - **Total Blocks**: 262,144
+//! - **Bitmap Size**: 32,768 bytes (32KB)
+//! - **Overhead**: 0.003% of total space
+//!
+//! Compare to V0.1 linked lists: ~16MB overhead for same filesystem!
+//!
+//! ## Error Handling
+//!
+//! The allocator provides detailed error types:
+//!
+//! - **NoSpace**: No free blocks available
+//! - **AlreadyAllocated**: Attempt to allocate already-allocated block
+//! - **NotAllocated**: Attempt to free unallocated block
+//! - **DoubleFree**: Attempt to free already-free block
+//!
+//! ## Usage Example
+//!
+//! ```rust
+//! use pslfs::allocator::{BlockAllocator, AllocatorStats};
+//! use pslfs::BlockId;
+//!
+//! // Create allocator for 1000 blocks
+//! let mut allocator = BlockAllocator::new(1000);
+//!
+//! // Allocate a block
+//! let block_id = allocator.allocate()?;
+//! assert_eq!(block_id, BlockId(0));
+//! assert!(allocator.is_allocated(block_id));
+//!
+//! // Allocate contiguous blocks
+//! let blocks = allocator.allocate_contiguous(5)?;
+//! assert_eq!(blocks.len(), 5);
+//!
+//! // Check statistics
+//! let stats = allocator.stats();
+//! assert_eq!(stats.free_blocks, 994); // 1000 - 1 - 5
+//! assert!(stats.utilization > 0.0);
+//!
+//! // Free a block
+//! allocator.free(block_id)?;
+//! assert!(!allocator.is_allocated(block_id));
+//!
+//! # Ok::<(), Box<dyn std::error::Error>>(())
+//! ```
+//!
+//! ## Implementation Details
+//!
+//! - **Bit Scanning**: Uses `trailing_zeros()` for fast first-free-bit detection
+//! - **Word Alignment**: Operates on 64-bit words for efficiency
+//! - **Cache Optimization**: Maintains `first_free` hint for common case
+//! - **Statistics**: Tracks allocation patterns for debugging and optimization
+//!
+//! ## Testing
+//!
+//! Comprehensive test suite covers:
+//! - Basic allocation and freeing
+//! - Edge cases (full, empty, fragmented)
+//! - Contiguous allocation
+//! - Error conditions
+//! - Performance characteristics
 
 use crate::BlockId;
 use std::fmt;

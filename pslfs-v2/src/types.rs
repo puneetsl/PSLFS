@@ -1,7 +1,39 @@
-//! Core type definitions for PSLFS V2
+//! # Core Type Definitions for PSLFS V2
 //!
 //! This module defines the fundamental types used throughout the filesystem,
 //! including identifiers, blocks, and other core structures.
+//!
+//! ## Design Principles
+//!
+//! - **Type Safety**: Use newtypes instead of raw integers to prevent mixups
+//! - **Clear Intent**: Each type has a specific purpose and clear semantics
+//! - **Debugging**: All types implement Debug and Display for easy debugging
+//! - **Performance**: Efficient representations suitable for high-performance I/O
+//!
+//! ## Type Overview
+//!
+//! - **BlockId**: Unique identifier for filesystem blocks (4KB units)
+//! - **InodeId**: Unique identifier for files and directories
+//! - **UserId**: User identifier for permissions and ownership
+//! - **SessionId**: Session identifier for authentication
+//! - **InodeKind**: Type of inode (file or directory)
+//! - **FsState**: Filesystem state (clean, dirty, error)
+//! - **Block**: 4KB data block with efficient operations
+//!
+//! ## Usage
+//!
+//! ```rust
+//! use pslfs::{BlockId, InodeId, Block};
+//!
+//! // Create identifiers
+//! let block_id = BlockId::new(42);
+//! let inode_id = InodeId::root(); // Always 1
+//! let user_id = UserId::new(1000);
+//!
+//! // Work with blocks
+//! let block = Block::from_slice(b"Hello, World!");
+//! assert_eq!(block.as_slice().len(), Block::SIZE);
+//! ```
 
 use std::fmt;
 
