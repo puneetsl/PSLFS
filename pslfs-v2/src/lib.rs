@@ -9,6 +9,8 @@
 
 pub mod types;
 pub mod storage;
+pub mod allocator;
 
 pub use types::*;
 pub use storage::*;
+pub use allocator::*;
