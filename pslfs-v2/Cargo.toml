@@ -12,3 +12,5 @@ name = "pslfs"
 path = "src/main.rs"
 
 [dependencies]
+thiserror = "1.0"
+tempfile = "3.8"
