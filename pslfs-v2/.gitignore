@@ -1,0 +1,10 @@
+# Rust compilation target
+target/
+
+# Cargo lock file (optional, since it's already in repo)
+# Cargo.lock
+
+# Other common ignores
+*.log
+*.tmp
+*.swp
