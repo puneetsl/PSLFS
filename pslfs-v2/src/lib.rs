@@ -81,7 +81,11 @@
 pub mod types;
 pub mod storage;
 pub mod allocator;
+pub mod superblock;
+pub mod error;
 
 pub use types::*;
-pub use storage::*;
+pub use storage::{StorageBackend, StorageError, FileBackend, MemoryBackend};
 pub use allocator::*;
+pub use superblock::*;
+pub use error::*;

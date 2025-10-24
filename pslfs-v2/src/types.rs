@@ -38,7 +38,7 @@
 use std::fmt;
 
 /// Unique identifier for a block in the filesystem
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, serde::Serialize, serde::Deserialize)]
 pub struct BlockId(pub u64);
 
 impl BlockId {
@@ -60,7 +60,7 @@ impl fmt::Display for BlockId {
 }
 
 /// Unique identifier for an inode (file or directory)
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, serde::Serialize, serde::Deserialize)]
 pub struct InodeId(pub u64);
 
 impl InodeId {
@@ -87,7 +87,7 @@ impl fmt::Display for InodeId {
 }
 
 /// Unique identifier for a user
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, serde::Serialize, serde::Deserialize)]
 pub struct UserId(pub u32);
 
 impl UserId {
@@ -114,7 +114,7 @@ impl fmt::Display for UserId {
 }
 
 /// Unique identifier for a user session
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub struct SessionId(pub u64);
 
 impl SessionId {
@@ -153,7 +153,7 @@ impl fmt::Display for InodeKind {
 }
 
 /// Filesystem state
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum FsState {
     Clean,
     Dirty,
